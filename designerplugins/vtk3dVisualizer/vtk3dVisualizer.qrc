@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/vtk3dVisualizer">
+        <file>icons/items.png</file>
+        <file>icons/itemsSettings.png</file>
+        <file>icons/settings.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WidgetPropPythonGeneral</class>
+ <widget class="QWidget" name="WidgetPropPythonGeneral">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>382</width>
+    <height>509</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Executing or debugging scripts with unsaved changes</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="comboSaveScriptBeforeExecution">
+     <item>
+      <property name="text">
+       <string>Always ask to save scripts before execution</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Automatically save all unsaved scripts before execution</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Do not save any unsaved scripts (last saved version is executed then)</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Python sys.exit() command</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <widget class="QCheckBox" name="checkCloseItomByPySysExit">
+        <property name="text">
+         <string>Close the itom application with Python sys.exit() command</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title">
+      <string>Python home directory</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Python can only be started properly if its home directory, containing built-in libraries, is automatically detected or manually given. Please choose the right option for finding this directory here (under Windows, the directory usually contains the Python executable):</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rbPyHomeSub">
+        <property name="text">
+         <string>Subdirectory of itom (...\itom\python3)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rbPyHomeSys">
+        <property name="text">
+         <string>System information (Registry, PYTHONHOME,...)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rbPyHomeUse">
+        <property name="text">
+         <string>User defined:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="PathLineEdit" name="pathLineEditPyHome">
+        <property name="filters">
+         <set>PathLineEdit::Dirs|PathLineEdit::NoDot|PathLineEdit::NoDotAndDotDot|PathLineEdit::NoDotDot|PathLineEdit::Readable</set>
+        </property>
+        <property name="options">
+         <set>PathLineEdit::ShowDirsOnly</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Python Help System</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>By default (aka fallback) python prints help to stdout. But you can also specify a 3rd Party command to display the help. This requires setting the environment Variable PAGER. Changing Variables requires a RESTART of ITOM on some systems. The command must be in PATH.</string>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QComboBox" name="cbbPyUse3rdPartyPresets"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLineEdit" name="lePyUse3rdPartyCommand"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="cbPyUse3rdPartyHelp">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>use 3rd Party Tool to display Help</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QPushButton" name="pbApplyPyUse3rdPartyHelpViewer">
+        <property name="text">
+         <string>apply</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PathLineEdit</class>
+   <extends>QWidget</extends>
+   <header>pathLineEdit.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

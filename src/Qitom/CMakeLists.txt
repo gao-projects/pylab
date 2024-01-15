@@ -1,0 +1,953 @@
+
+
+set(target_name qitom)
+project(${target_name})
+
+message(STATUS "--------------- EXECUTABLE ${target_name} -----------------")
+
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+if(${BUILD_WITH_HELPVIEWER})
+    #HELPVIEWER is only available for Qt >= 5.6.0
+    #at first, get the available Qt version
+    itom_find_package_qt(ON Core)
+
+    if (QT5_FOUND AND (Qt5_VERSION VERSION_LESS 5.6.0))
+        message(WARNING "BUILD_WITH_HELPVIEWER is set to FALSE, since it is only possible for Qt >= 5.6.0")
+        set(BUILD_WITH_HELPVIEWER FALSE)
+    endif()
+endif()
+
+if(${BUILD_WITH_HELPVIEWER})
+    #requires Qt5 and Qt5WebEngine in order to built a built-in help viewer, since QtAssistant only has a limited set of rendering options since Qt5.6.
+    itom_find_package_qt(ON Core Widgets UiTools PrintSupport Network Sql Xml OpenGL Svg WebEngineWidgets Help Designer LinguistTools)
+
+    if(Qt5WebEngineWidgets_FOUND OR Qt6WebEngineWidgets_FOUND)
+        add_definitions(-DUSEHELPVIEWER -D_USEHELPVIEWER)
+    else()
+        message(FATAL "Your Qt installation does not provide the component WebEngineWidgets. Disable the option BUILD_WITH_HELPVIEWER in CMAKE to proceed without the integrated help viewer")
+    endif()
+else()
+    #uses the old QtAssistant as help viewer.
+    itom_find_package_qt(ON Core Widgets UiTools PrintSupport Network Sql Xml OpenGL Svg Designer LinguistTools)
+endif()
+
+find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development NumPy)
+
+if (${Python_VERSION} VERSION_LESS "3.5.0")
+    message(FATAL_ERROR "The minimum required Python version is 3.5.0")
+endif()
+
+find_package(OpenCV COMPONENTS core REQUIRED)
+
+if(BUILD_WITH_PCL)
+    include(Setup_PCL_Itom)
+    if(WIN32)
+        find_package(PCL 1.5.1 QUIET REQUIRED COMPONENTS common PATHS ${PCL_CMAKE_DIR} NO_DEFAULT_PATH)
+    else(WIN32)
+        find_package(PCL 1.5.1 QUIET REQUIRED COMPONENTS common)
+    endif(WIN32)
+
+    # actually we need this only to configure the itom.bat including vtk, otherwise
+    # eventually pcl-tools plugin will not be loaded
+    find_package(VTK QUIET)
+endif()
+
+find_package(VisualLeakDetector QUIET)
+find_package(HTMLHelp)
+find_package(LATEX QUIET)
+
+# set some preprocessor directives
+add_definitions(${Qt5Widgets_DEFINITIONS})
+add_definitions(-DUNICODE -D_UNICODE)
+add_definitions(-DITOM_CORE -DITOMSHAREDDESIGNER)
+
+if(BUILD_WITH_PCL)
+    add_definitions(-DUSEPCL -D_USEPCL)
+endif()
+
+if(BUILD_WITH_PYMATLAB)
+    add_definitions(-DUSEPYMATLAB -D_USEPYMATLAB)
+endif()
+
+if(BUILD_WITH_GIMMICKS)
+    add_definitions(-DUSEGIMMICKS -D_USEGIMMICKS)
+endif()
+
+# it is possible to add an optional, additional string as edition name
+# of itom (e.g. in order to indicate a special combination of plugins,
+# build settings etc.). This optional name is shown in both the startup
+# splashscreen as well as the about dialog of itom.
+set(ITOM_ADDITIONAL_EDITION_NAME "" CACHE
+    STRING "Optional, additional name of this itom edition (shown in splashscreen and about dialog)")
+add_definitions( "-DITOM_ADDITIONAL_EDITION_NAME=\"${ITOM_ADDITIONAL_EDITION_NAME}\"")
+
+option(ITOM_ADDITIONAL_BUILD_DATE "Optional, additional build date and time in splashscreen" OFF)
+if (ITOM_ADDITIONAL_BUILD_DATE)
+    add_definitions(-DITOM_ADDITIONAL_BUILD_DATE=1)
+else()
+    add_definitions(-DITOM_ADDITIONAL_BUILD_DATE=0)
+endif()
+
+# check files and directories from pymatlab, if flag BUILD_WITH_PYMATLAB is set
+if(BUILD_WITH_PYMATLAB)
+    if(WIN32)
+        set(MATLAB_ROOT_PATH
+            ${MATLAB_ROOT_PATH}
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\7.0;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\7.12;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\7.14;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\8.0;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\8.1;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2015a;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2015b;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2016a;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2016b;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2017a;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2017b;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2018a;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2018b;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2019a;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2019b;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2020a;MATLABROOT]"
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB\\R2020b;MATLABROOT]"
+        )
+
+        if(BUILD_TARGET64)
+            set(MATLAB_LIB_SUFFIXES
+                "lib/win64"
+                "lib/win64/microsoft"
+                "extern/lib/win64"
+                "extern/lib/win64/microsoft"
+            )
+        else()
+            set(MATLAB_LIB_SUFFIXES
+                "lib/win32"
+                "lib/win32/microsoft"
+                "extern/lib/win32"
+                "extern/lib/win32/microsoft"
+            )
+        endif()
+    else()
+        set(MATLAB_LIB_SUFFIXES)
+    endif()
+
+    find_path(PYMATLAB_INCLUDE_DIR "engine.h" PATHS ${MATLAB_ROOT_PATH}/extern/include)
+    if(NOT PYMATLAB_INCLUDE_DIR)
+        message(FATAL_ERROR "BUILD_WITH_PYMATLAB is checked, but PYMATLAB_INCLUDE_DIR could not be found")
+    endif()
+else()
+    set(PYMATLAB_INCLUDE_DIR "")
+endif()
+
+if(MSVC)
+    # Qt disables the native wchar_t type, do it too to avoid linking issues
+    # well that changed in qt5 so go back to built-in type
+    if(QT5_FOUND)
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Zc:wchar_t" )
+    endif()
+endif()
+
+
+# First for the generic no-config case (e.g. with mingw)
+set(ITOMOUTPUTDIR ${ITOM_APP_DIR})
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ITOMOUTPUTDIR} )
+set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${ITOMOUTPUTDIR} )
+set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${ITOMOUTPUTDIR} )
+message(STATUS "--------------- ITOMOUTPUTDIR ${ITOMOUTPUTDIR} -----------------")
+
+# Second, for multi-config builds (e.g. msvc)
+foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+    string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${ITOMOUTPUTDIR} )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${ITOMOUTPUTDIR} )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${ITOMOUTPUTDIR} )
+endforeach()
+
+include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/python
+    ${CMAKE_CURRENT_BINARY_DIR}/GeneratedFiles
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${Qt5Widgets_INCLUDE_DIRS}
+    ${Qt5WebEngineWidgets_INCLUDE_DIRS}
+    ${Qt5Help_INCLUDE_DIRS}
+    ${Qt5Network_INCLUDE_DIRS}
+    ${Qt6Widgets_INCLUDE_DIRS}
+    ${Qt6WebEngineWidgets_INCLUDE_DIRS}
+    ${Qt6Help_INCLUDE_DIRS}
+    ${Qt6Network_INCLUDE_DIRS}
+    ${Python_INCLUDE_DIRS}
+    ${Python_NumPy_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
+    ${PYMATLAB_INCLUDE_DIR}
+    ${VISUALLEAKDETECTOR_INCLUDE_DIR}
+    ${OpenCV_INCLUDE_DIRS}
+    ../DataObject/
+    ../PointCloud/
+    ../AddInManager/
+    ../itomWidgets
+)
+
+link_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}/../DataObject
+    ${CMAKE_CURRENT_BINARY_DIR}/../PointCloud
+    ${CMAKE_CURRENT_BINARY_DIR}/../AddInManager
+    ${CMAKE_CURRENT_BINARY_DIR}/../itomWidgets
+)
+
+set(qitom_HEADERS_NOMOC
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/addInGrabber.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/addInInterface.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/helperCommon.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/sharedFunctionsQt.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/sharedStructures.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/sharedStructuresGraphics.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/sharedStructuresQt.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/sharedStructuresPrimitives.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/typeDefs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/numeric.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/color.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../AddInManager/pluginModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../AddInManager/addInManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../AddInManager/algoInterfaceValidator.h
+)
+
+set(qitom_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../AddInManager/0.h   # this file must be first in list for automoc
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AppManagement.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/global.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/mainApplication.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/api/apiFunctionsGraph.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/compatHelper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/guiHelper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/IOHelper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/versionHelper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helpViewer/helpViewer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helpViewer/qtHelpUrlSchemeHandler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/qpropertyHelper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/breakPointModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/bookmarkModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/outlineItem.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/itomFileSystemModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/leafFilterProxyModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/pipManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/timerModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/UserModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/designerWidgetOrganizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/helpSystem.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/paletteOrganizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/processOrganizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/scriptEditorOrganizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/uiOrganizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/userInteractionWatcher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/userOrganizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/widgetWrapper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonAutoInterval.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonAlgorithms.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonCommon.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonDataObject.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonDateTime.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonEngine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonEngineInc.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonFont.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonItom.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonItomMetaObject.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonJedi.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonJediRunner.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonLogger.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonMatlab.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonNone.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonPCL.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonPlotItem.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonProgressObserver.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonPlugins.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonProxy.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonQtConversion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonQtSignalMapper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonRegion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonRgba.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonShape.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonSharedPointerGuard.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonStatePublisher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonStream.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythontParamConversion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonUi.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonUiTimer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonWorkspace.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/qDebugStream.h
+	${CMAKE_CURRENT_SOURCE_DIR}/python/pythonWrapper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/abstractFilterDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/abstractPropertyPageWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogAbout.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogCloseItom.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogEditBreakpoint.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogGoto.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogIconBrowser.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogLoadedPlugins.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogNewPluginInstance.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogOpenFileWithFilter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogOpenNewGui.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPipManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPipManagerInstall.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPluginPicker.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogProperties.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogReloadModule.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogReplace.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSaveFileWithFilter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSelectUser.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSnapshot.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogScriptCharsetEncoding.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogTimerManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogVariableDetail.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogVariableDetailDataObject.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/helpTreeDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/itomSpinBox.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/paramInputDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/paramInputParser.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetFindWord.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetInfoBox.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleGeneral.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleLastCommand.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleWrap.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorAutoCompletion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorAutoCodeFormat.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorCalltips.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorGeneral.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorGotoAssignment.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorDocstringGenerator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorScripts.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorCodeCheckers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorStyles.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropFigurePlugins.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralApplication.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralLanguage.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralPlotSettings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralStyles.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropHelpDock.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPalettes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPluginsAlgorithms.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPluginsActuators.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPythonGeneral.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPythonStartup.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropWorkspaceUnpack.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/abstractDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/abstractCodeEditorWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/AIManagerWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/breakPointDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/bookmarkDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/callStackDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/consoleWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/extendedDataObjectTable.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/figureWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/fileSystemDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/helpDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/itomQWidgets.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/lastCommandDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/mainWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/menuOnlyForEnter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/outlineSelectorWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/scriptDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/scriptEditorWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/scriptEditorPrinter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/shortcutAction.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/tabSwitcherWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userManagement.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userManagementEdit.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userUiDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userUiWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/workspaceDockWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/workspaceWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../plot/AbstractDObjFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../plot/AbstractDObjPCLFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../plot/AbstractFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../plot/AbstractItomDesignerPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../plot/AbstractNode.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/codeEditor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/delayJobRunner.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/mode.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/textDecoration.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/codeCheckerItem.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/pyCodeFormatter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/textBlockUserData.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/toolTip.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/foldDetector/foldDetector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/foldDetector/charBasedFoldDetector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/foldDetector/indentFoldDetector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/manager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/modesManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/panelsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/textDecorationsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/autoindent.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/caretLineHighlight.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/errorLineHighlight.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/lineBackgroundMarker.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/indenter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/occurrences.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyAutoIndent.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/symbolMatcherMode.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyCalltips.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyGotoAssignment.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyDocstringGenerator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/codeCompletion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/wordclick.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/wordHoverTooltip.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/checkerBookmarkPanel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/breakpointPanel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/foldingPanel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/lineNumber.h
+	${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/globalCheckerPanel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/syntaxHighlighter/pythonSyntaxHighlighter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/syntaxHighlighter/syntaxHighlighterBase.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/syntaxHighlighter/codeEditorStyle.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/utils/utils.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/allocator.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/dbug.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/textdiff/diff.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/hashmap.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/iterator.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/msgno.h
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/suba.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/textdiff/varray.h
+)
+
+set(qitom_UI
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogAbout.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogCloseItom.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogEditBreakpoint.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogGoto.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogIconBrowser.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogLoadedPlugins.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogNewPluginInstance.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogOpenFileWithFilter.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogOpenNewGui.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPipManager.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPipManagerInstall.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPluginPicker.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogReloadModule.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogReplace.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSaveFileWithFilter.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSelectUser.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogScriptCharsetEncoding.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSnapshot.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogTimerManager.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogVariableDetail.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogVariableDetailDataObject.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/helpTreeDockWidget.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/paramInputDialog.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetFindWord.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetInfoBox.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleGeneral.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleGeneral.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleLastCommand.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleWrap.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorAutoCompletion.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorAutoCodeFormat.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorCalltips.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorGeneral.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorGotoAssignment.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorDocstringGenerator.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorScripts.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorCodeCheckers.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorStyles.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropFigurePlugins.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralApplication.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralLanguage.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralPlotSettings.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralStyles.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropHelpDock.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPalettes.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPluginsAlgorithms.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPluginsActuators.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPythonGeneral.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPythonStartup.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropWorkspaceUnpack.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/uiDebugViewer.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/uiMainWindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userManagement.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userManagementEdit.ui
+)
+
+set(qitom_RCC
+    ${CMAKE_CURRENT_SOURCE_DIR}/qitom.qrc
+)
+
+set(qitom_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/AppManagement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/global.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/mainApplication.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/api/apiFunctionsGraph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/compatHelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/guiHelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/IOHelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/versionHelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helper/qpropertyHelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helpViewer/helpViewer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/helpViewer/qtHelpUrlSchemeHandler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/breakPointModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/bookmarkModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/outlineItem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/itomFileSystemModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/leafFilterProxyModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/pipManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/timerModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/models/UserModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/designerWidgetOrganizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/helpSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/paletteOrganizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/processOrganizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/scriptEditorOrganizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/uiOrganizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/userInteractionWatcher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/userOrganizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/organizer/widgetWrapper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonAutoInterval.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonAlgorithms.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonCommon.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonDataObject.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonDateTime.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonFigure.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonFont.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonItom.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonJediRunner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonLogger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonMatlab.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonPCL.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonPlotItem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonProgressObserver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonPlugins.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonProxy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonQtConversion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonQtSignalMapper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonRegion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonRgba.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonShape.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonSharedPointerGuard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonStatePublisher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonStream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythontParamConversion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonUi.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonUiTimer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonWorkspace.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/qDebugStream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/abstractFilterDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogAbout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogCloseItom.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogEditBreakpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogGoto.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogIconBrowser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogLoadedPlugins.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogNewPluginInstance.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogOpenFileWithFilter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogOpenNewGui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPipManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPipManagerInstall.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogPluginPicker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogProperties.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogReloadModule.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogReplace.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSaveFileWithFilter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSelectUser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogScriptCharsetEncoding.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogSnapshot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogTimerManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogVariableDetail.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/dialogVariableDetailDataObject.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/helpTreeDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/paramInputDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/paramInputParser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetFindWord.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleGeneral.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleLastCommand.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropConsoleWrap.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorAutoCompletion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorAutoCodeFormat.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorCalltips.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorGotoAssignment.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorDocstringGenerator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorGeneral.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorScripts.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorCodeCheckers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropEditorStyles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropFigurePlugins.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralApplication.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralLanguage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralPlotSettings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropGeneralStyles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropHelpDock.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPalettes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPluginsAlgorithms.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPluginsActuators.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPythonGeneral.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropPythonStartup.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/widgetPropWorkspaceUnpack.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/abstractDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/abstractCodeEditorWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/AIManagerWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/breakPointDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/bookmarkDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/callStackDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/consoleWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/extendedDataObjectTable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/figureWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/fileSystemDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/helpDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/lastCommandDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/mainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/outlineSelectorWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/scriptDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/scriptEditorWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/scriptEditorPrinter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/shortcutAction.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/tabSwitcherWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userManagement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userManagementEdit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userUiDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/userUiWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/workspaceDockWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/widgets/workspaceWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/codeEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/delayJobRunner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/mode.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/textDecoration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/codeCheckerItem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/pyCodeFormatter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/textBlockUserData.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/toolTip.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/foldDetector/foldDetector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/foldDetector/charBasedFoldDetector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/foldDetector/indentFoldDetector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/modesManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/panelsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/managers/textDecorationsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/autoindent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/caretLineHighlight.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/errorLineHighlight.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/lineBackgroundMarker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/indenter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/occurrences.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyAutoIndent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyDocstringGenerator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/symbolMatcherMode.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyCalltips.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/pyGotoAssignment.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/codeCompletion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/wordclick.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/modes/wordHoverTooltip.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/checkerBookmarkPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/breakpointPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/foldingPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/lineNumber.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/panels/globalCheckerPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/syntaxHighlighter/pythonSyntaxHighlighter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/syntaxHighlighter/syntaxHighlighterBase.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/syntaxHighlighter/codeEditorStyle.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/codeEditor/utils/utils.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/allocator.c
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/dbug.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/textdiff/diff.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/hashmap.c
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/msgno.c
+    #${CMAKE_CURRENT_SOURCE_DIR}/textdiff/suba.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/textdiff/varray.cpp
+)
+
+if(MSVC)
+    list(APPEND qitom_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
+endif()
+
+#add filters to visual studio
+itom_add_source_group(api)
+itom_add_source_group(helper)
+itom_add_source_group(models)
+itom_add_source_group(organizer)
+itom_add_source_group(python)
+itom_add_source_group(ui)
+itom_add_source_group(widgets)
+itom_add_source_group(helpViewer)
+itom_add_source_group(codeEditor)
+itom_add_source_group(codeEditor/foldDetector)
+itom_add_source_group(codeEditor/managers)
+itom_add_source_group(codeEditor/modes)
+itom_add_source_group(codeEditor/panels)
+itom_add_source_group(codeEditor/syntaxHighlighter)
+itom_add_source_group(codeEditor/utils)
+itom_add_source_group(textdiff)
+#end add filters to visual studio
+
+
+#Find ITOM_VERION version by looking at global.h
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/global.h ITOM_VERSIONS_TMP REGEX "^#define ITOM_VERSION_[A-Z]+[ \t]+0x[0-9A-F]+$")
+string(REGEX REPLACE ".*#define ITOM_VERSION_MAJOR[ \t]+(0x[0-9A-F]+).*" "\\1" ITOM_VERSION_MAJOR ${ITOM_VERSIONS_TMP})
+string(REGEX REPLACE ".*#define ITOM_VERSION_MINOR[ \t]+(0x[0-9A-F]+).*" "\\1" ITOM_VERSION_MINOR ${ITOM_VERSIONS_TMP})
+string(REGEX REPLACE ".*#define ITOM_VERSION_PATCH[ \t]+(0x[0-9A-F]+).*" "\\1" ITOM_VERSION_PATCH ${ITOM_VERSIONS_TMP})
+#set(ITOM_VERSION_STRING ${ITOM_VERSION_MAJOR}.${ITOM_VERSION_MINOR}.${ITOM_VERSION_PATCH} CACHE STRING "" FORCE)
+
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/global.h ITOM_VERSIONS_TMP REGEX "^#define ITOM_VERSION_STR[ \t]+.*$")
+string(REGEX REPLACE ".*#define ITOM_VERSION_STR[ \t]+.([0-9\\.]+).*" "\\1" ITOM_VERSION_STRING ${ITOM_VERSIONS_TMP})
+
+if(APPLE)
+    # Set meta data for OS X bundle
+    set(MACOSX_BUNDLE TRUE)
+    set(MACOSX_BUNDLE_BUNDLE_NAME "itom")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "ITO.itom")
+    set(MACOSX_BUNDLE_INFO_STRING "itom - an Open Source Measurement, Automation and Evaluation Software\nhttps://github.com/itom-project")
+    set(MACOSX_BUNDLE_LONG_VERSION_STRING "${ITOM_VERSION_STRING}")
+    set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${ITOM_VERSION_STRING}")
+    set(MACOSX_BUNDLE_BUNDLE_VERSION ${ITOM_VERSION_STRING})
+    set(MACOSX_BUNDLE_COPYRIGHT "GNU LGPL with itom exception. Used plugins and libraries might differ. https://itom-project.github.io/latest/docs/01_introduction/introduction.html#licensing.")
+
+    # Setting icon for OS X
+    set(target_icon itomicon.icns)
+    set(target_icon_path "${CMAKE_CURRENT_SOURCE_DIR}/appicon/osx/${target_icon}")
+    set(MACOSX_BUNDLE_ICON_FILE "${target_icon}")
+    set_source_files_properties(${target_icon_path} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
+    # Add executable for OS X
+    add_executable(${target_name}
+        MACOSX_BUNDLE ${target_icon_path}
+        ${qitom_SOURCES}
+        ${qitom_HEADERS}
+        ${qitom_UI}
+        ${qitom_RCC}
+        )
+
+    # Set binary file names for OS X
+    set_target_properties(${target_name}
+        PROPERTIES OUTPUT_NAME itom$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+
+    # Copy files into app bundle after build
+    itom_copy_type_to_bundle_nonrec(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../" "" ".dylib")
+    itom_copy_type_to_bundle_nonrec(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../" "" ".py")
+	itom_copy_type_to_bundle_nonrec(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../" "" ".rcc")
+    itom_copy_to_bundle(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../itom-packages" "itom-packages")
+    itom_copy_to_bundle(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../plugins" "plugins")
+    itom_copy_to_bundle(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../designer" "designer")
+    itom_copy_to_bundle(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../help" "help")
+    itom_copy_to_bundle(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../demo" "../demo")
+    itom_copy_to_bundle(${target_name} "${CMAKE_CURRENT_BINARY_DIR}/../itomSettings" "itomSettings")
+else(APPLE)
+    # Executable for WINDOWS and LINUX
+    add_executable(${target_name}
+        WIN32
+        ${qitom_SOURCES}
+        ${qitom_HEADERS}
+        ${qitom_UI}
+        ${qitom_RCC}
+        )
+
+    # Set binary file names for  WINDOWS and LINUX
+    set_target_properties(${target_name}
+        PROPERTIES OUTPUT_NAME qitom$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+endif(APPLE)
+
+
+
+# HANDLE VERSION (FROM GIT)
+unset(GIT_FOUND CACHE)
+find_package(Git)
+
+if(CONSIDER_GIT_SVN AND GIT_FOUND)
+    message(STATUS "Using GIT as repository information")
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/pyGit2Header.py.in ${CMAKE_CURRENT_BINARY_DIR}/pyGit2Header.py )
+
+    add_custom_target(
+        ${target_name}_versionCheck
+        COMMAND    ${Python_EXECUTABLE}
+        "${CMAKE_CURRENT_BINARY_DIR}/pyGit2Header.py"
+    )
+
+    add_dependencies(${target_name} ${target_name}_versionCheck)
+else()
+    message(STATUS "Git versioning was not enabled (CONSIDER_GIT_SVN OFF) or git could not be found. Default version.h file is generated")
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/version_nogit.h DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+    file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/version_nogit.h ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+endif()
+# END HANDLE VERSION
+
+add_dependencies(${target_name} itomWidgets iconThemeBright iconThemeDark)
+
+set( WINICONRES "" )
+
+if(MSVC)
+    set(CMAKE_CXX_STANDARD_LIBRARIES "user32.lib")
+    if(CMAKE_CL_64)
+        set( WINICONRES ${CMAKE_CURRENT_SOURCE_DIR}/appicon/windows/itomicon64.res )
+    else()
+        set( WINICONRES ${CMAKE_CURRENT_SOURCE_DIR}/appicon/windows/itomicon32.res )
+    endif()
+endif()
+
+if(Python_LIBRARY_DEBUG AND Python_LIBRARY_RELEASE)
+    set(PYTHON_LIBRARY_ITOM ${Python_LIBRARY_RELEASE})
+#only debug
+elseif(Python_LIBRARY_DEBUG)
+    message(STATUS "Python is always linked as release version to itom, therefore indicate the release library of python")
+#only release
+elseif(Python_LIBRARY_RELEASE)
+    set(PYTHON_LIBRARY_ITOM ${Python_LIBRARY_RELEASE})
+elseif(Python_LIBRARY)
+    set(PYTHON_LIBRARY_ITOM ${Python_LIBRARY})
+#no library found
+else()
+    message(STATUS "Python could not be found")
+endif()
+
+if(BUILD_WITH_PCL)
+    set(POINTCLOUD_LIBRARIES pointcloud)
+    target_link_libraries(pointcloud)
+else()
+    set(POINTCLOUD_LIBRARIES "")
+endif()
+
+if(WIN32)
+    target_link_libraries(${target_name}
+        ${WINICONRES}
+        ${PYTHON_LIBRARY_ITOM}
+        ${OpenCV_LIBS}
+        ${POINTCLOUD_LIBRARIES}
+        ${VISUALLEAKDETECTOR_LIBRARIES}
+        ${QT5_LIBRARIES}
+        AddInManager
+        CommonLib
+        CommonQtLib
+        DataObject
+        itomWidgets
+        CommonPlotLib
+        qpropertyeditor
+        ShapeLib
+        ${PYMATLAB_LIBRARIES}
+        shell32)
+else()
+    target_link_libraries(${target_name}
+        ${WINICONRES}
+        ${PYTHON_LIBRARY_ITOM}
+        ${OpenCV_LIBS}
+        ${POINTCLOUD_LIBRARIES}
+        ${VISUALLEAKDETECTOR_LIBRARIES}
+        ${QT5_LIBRARIES}
+        addinmanager
+        CommonLib
+        CommonQtLib
+        DataObject
+        itomWidgets
+        CommonPlotLib
+        qpropertyeditor
+        ShapeLib
+        ${PYMATLAB_LIBRARIES})
+endif()
+
+#translation
+itom_library_translation(QM_FILES
+    TARGET ${target_name}
+    FILES_TO_TRANSLATE
+    ${qitom_SOURCES}
+    ${qitom_HEADERS}
+    ${qitom_HEADERS_NOMOC}
+    ${qitom_UI})
+
+foreach(_nomoc_header ${qitom_HEADERS_NOMOC})
+    set_property(SOURCE ${_nomoc_header} PROPERTY SKIP_AUTOMOC ON)
+endforeach()
+
+# Qt: enable all automoc, autouic and autorcc. Autouic file will be disabled for all files that are processed manually by itom_qt_wrap_ui.
+set_target_properties(${target_name} PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
+
+# increase the stack size of the linker to avoid stack overflow errors for recursive calls
+# Since stack size holds for all threads. The python thread itself gets its own.
+# From Qt 5.10 on, it is possible to directly set the stack size of relevant threads,
+# including the worker thread for Jedi calls. Since the stack size of the thread pool
+# for Jedi cannot be changed with Qt < 5.10, the overall stack size is changed then here.
+if(MSVC)
+    if((NOT ${Qt5_FOUND}) OR (Qt5_VERSION VERSION_LESS 5.10.0))
+        # see https://stackoverflow.com/questions/49644273/cmake-change-stack-size
+        set_target_properties(${target_name} PROPERTIES LINK_FLAGS "/STACK:4000000")
+    endif()
+
+    if(QT6_FOUND)
+        target_compile_options(${target_name} PUBLIC "/Zc:__cplusplus") #  "permissive-")
+    endif()
+endif()
+
+itom_build_parallel_linux(${target_name})
+
+# for backward compatiblity: enum.py is a default python library from Python 3.4 on. In order to
+# also support earlier versoins, enum.py was also part of the itom-packages folder. However, this
+# version is old and creates conflicts with newer versions required by further modern python packages.
+# Therefore, enum.py was removed from itom-packages. If one uses Python 3.3 or earlier, the packages enum34
+# has to be installed manually!
+if(EXISTS "${ITOM_APP_DIR}/itom-packages/enum.py")
+    message(WARNING "itom-packages/enum.py exists. This file will be deleted.")
+    file(REMOVE "${ITOM_APP_DIR}/itom-packages/enum.py")
+endif()
+
+if(EXISTS "${ITOM_APP_DIR}/SDK/include/plotLegends")
+    message(WARNING "SDK/include/plotLegends exists. This folder will be removed.")
+    file(REMOVE_RECURSE "${ITOM_APP_DIR}/SDK/include/plotLegends")
+endif()
+
+if(EXISTS "${ITOM_APP_DIR}/designer/dataObjectTable.dll")
+    message(WARNING "dataObjectTable.dll exists in designer. This file will be removed.")
+    file(REMOVE_RECURSE "${ITOM_APP_DIR}/designer/dataObjectTable.dll")
+endif()
+
+if(EXISTS "${ITOM_APP_DIR}/designer/dataObjectTabled.dll")
+    message(WARNING "dataObjectTabled.dll exists in designer. This file will be removed.")
+    file(REMOVE_RECURSE "${ITOM_APP_DIR}/designer/dataObjectTabled.dll")
+endif()
+
+if(EXISTS "${ITOM_APP_DIR}/designer/dObMetaDataTable.dll")
+    message(WARNING "dObMetaDataTable.dll exists in designer. This file will be removed.")
+    file(REMOVE_RECURSE "${ITOM_APP_DIR}/designer/dObMetaDataTable.dll")
+endif()
+
+if(EXISTS "${ITOM_APP_DIR}/designer/dObMetaDataTabled.dll")
+    message(WARNING "dObMetaDataTabled.dll exists in designer. This file will be removed.")
+    file(REMOVE_RECURSE "${ITOM_APP_DIR}/designer/dObMetaDataTabled.dll")
+endif()
+
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/python)
+
+if(ITOM_BUILD_PACKAGE)
+    set(Python_Itom_Build_Dir "./python3" )
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonBuildDir.h.in ${CMAKE_CURRENT_BINARY_DIR}/python/pythonBuildDir.h)
+else(ITOM_BUILD_PACKAGE)
+    cmake_path(GET Python_EXECUTABLE PARENT_PATH Python_Itom_Build_Dir)
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/python/pythonBuildDir.h.in ${CMAKE_CURRENT_BINARY_DIR}/python/pythonBuildDir.h)
+endif(ITOM_BUILD_PACKAGE)
+
+#Configure a RC file for MS visual studio to add version information in explorer to exe file
+if(MSVC)
+    message(STATUS "Using rc-File for version information under windows")
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc )
+endif()
+
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/itom_sdk.h.in ${ITOM_SDK_DIR}/include/itom_sdk.h)
+
+
+# - copy files to itom SDK folder in binary directory as post build step (after every build)
+#set(COPY_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+#(COPY_DESTINATIONS ${CMAKE_CURRENT_BINARY_DIR}/../SDK/include)
+# COPY SECTION
+set(COPY_SOURCES "")
+set(COPY_DESTINATIONS "")
+
+#copy all qm files to the translations subfolder of the itom root directory
+foreach(_qm ${QM_FILES})
+    set(COPY_SOURCES ${COPY_SOURCES} ${_qm})
+    set(COPY_DESTINATIONS ${COPY_DESTINATIONS} "${ITOM_APP_DIR}/translation")
+endforeach()
+
+itom_post_build_copy_files(${target_name} COPY_SOURCES COPY_DESTINATIONS)

@@ -1,0 +1,217 @@
+
+
+#pragma once
+
+#include "workspaceDockWidget.h"
+#include "callStackDockWidget.h"
+#include "scriptDockWidget.h"
+#include "consoleWidget.h"
+#include "AIManagerWidget.h"
+#include "fileSystemDockWidget.h"
+#include "breakPointDockWidget.h"
+#include "bookmarkDockWidget.h"
+#include "helpDockWidget.h"
+#include "lastCommandDockWidget.h"
+//#include "pythonMessageDockWidget.h"
+#include "userManagement.h"
+
+#include <qtableview.h>
+#include <qprocess.h>
+#include <qsplitter.h>
+
+#include "../organizer/helpSystem.h"
+
+#include <qsharedpointer.h>
+
+
+namespace ito {
+
+class WidgetInfoBox; //forward declaration
+
+#ifdef ITOM_USEHELPVIEWER
+class HelpViewer; //forward declaration
+#endif
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    MainWindow();
+    ~MainWindow();
+
+	ito::RetVal addCentralWidget(QWidget *widget);
+
+    void scriptEditorOrganizerAvailable();
+
+protected:
+    void closeEvent(QCloseEvent *event);
+    void resizeEvent(QResizeEvent * event);
+    void moveEvent (QMoveEvent * event);
+
+    inline bool pythonBusy() const { return m_pythonBusy; }                    /*!<  returns if python is busy (true) */
+    inline bool pythonDebugMode() const { return m_pythonDebugMode; }          /*!<  returns if python is in debug mode (true) */
+    inline bool pythonInWaitingMode() const { return m_pythonInWaitingMode; }  /*!<  returns if python is in waiting mode (true) \sa m_pythonInWaitingMode */
+
+private:
+    void createActions();
+    void createMenus();
+    void createToolBars();
+    void createStatusBar();
+    void updateMenus();
+    void updatePythonActions();
+
+    void getMenuHandlesRecursively(const QMenu *parent, QSharedPointer<QVector<size_t> > menuHandles);
+    QAction* searchActionRecursively(const size_t menuHandle, const QMenu *parent);
+
+    ConsoleWidget *m_console;
+
+    QVBoxLayout *m_contentLayout;
+	QSplitter *m_contentSplitter;
+
+    BreakPointDockWidget  *m_breakPointDock;
+    BookmarkDockWidget    *m_bookmarkDock;
+    LastCommandDockWidget *m_lastCommandDock;
+    HelpDockWidget        *m_helpDock;
+    WorkspaceDockWidget   *m_globalWorkspaceDock;
+    WorkspaceDockWidget   *m_localWorkspaceDock;
+    CallStackDockWidget   *m_callStackDock;
+    FileSystemDockWidget  *m_fileSystemDock;
+
+    AIManagerWidget* m_pAIManagerWidget;
+
+    QMap<QString, QToolBar*> m_userDefinedToolBars;
+    QMap<QString, QMenu* > m_userDefinedRootMenus;
+    unsigned int m_userDefinedActionCounter;
+
+    QAction *m_appFileNew;
+    QAction *m_appFileOpen;
+    QAction *m_aboutQt;
+    QAction *m_aboutQitom;
+    QAction* m_copyLog;
+
+    QMap<QString, QAction*> m_actions;
+
+    QMenu *m_pMenuFigure;
+    QMenu *m_pShowOpenFigure;
+    QMenu *m_pMenuHelp;
+    QMenu *m_pMenuFile;
+    QMenu *m_plastFilesMenu;
+    QMenu *m_pMenuPython;
+    QMenu *m_pMenuReloadModule;
+    QMenu *m_pMenuView;
+
+    HelpSystem *m_pHelpSystem;
+
+    //!< label for showing current directory in status bar
+    QLabel *m_pStatusLblCurrentDir;
+
+    //!< label for showing the busy status of python (hidden, if python is currently not working) in the status bar
+	QLabel *m_pStatusLblPythonBusy;
+
+    //!< label for showing basic information about the script, that has currently the focus, in the status bar
+    QLabel *m_pStatusLblScriptInfo;
+
+#ifdef ITOM_USEHELPVIEWER
+    QPointer<HelpViewer> m_helpViewer;
+#endif
+
+    QRect m_geometryNormalState;
+
+    bool m_pythonBusy;                  /*!<  if true, python is busy right now */
+    bool m_pythonDebugMode;             /*!<  if true, python is in debug mode right now */
+    bool m_pythonInWaitingMode;         /*!<  if true, python is in debug mode but waiting for next user command (e.g. the debugger waits at a breakpoint) */
+    bool m_isFullscreen;
+
+    QMap<QString, QPointer<WidgetInfoBox> > m_infoBoxWidgets;
+
+signals:
+    void mainWindowCloseRequest(bool considerPythonBusy);  /*!<  signal emitted if user would like to close the main window and therefore the entire application */
+    void pythonDebugCommand(tPythonDbgCmd cmd); /*!<  will be received by PythonThread, directly */
+    void pythonSetAutoReloadSettings(bool enabled, bool checkFile, bool checkCmd, bool checkFct);
+
+public slots:
+    void addAbstractDock(AbstractDockWidget* dockWidget, Qt::DockWidgetArea area = Qt::TopDockWidgetArea);
+    void removeAbstractDock(AbstractDockWidget* dockWidget);
+    void connectPythonMessageBox(QListWidget* pythonMessageBox);
+
+    void pythonStateChanged(tPythonTransitions pyTransition);
+
+    void setStatusText(QString message, int timeout);
+
+    ito::RetVal addToolbarButton(const QString &toolbarName, const QString &buttonName, const QString &buttonIconFilename, const QString &pythonCode, QSharedPointer<size_t> buttonHandle, ItomSharedSemaphore *waitCond = NULL);
+    ito::RetVal removeToolbarButton(const QString &toolbarName, const QString &buttonName, QSharedPointer<QVector<size_t> > buttonHandles, bool showMessage = true, ItomSharedSemaphore *waitCond = nullptr);
+    ito::RetVal removeToolbarButton(const size_t buttonHandle, bool showMessage = true, ItomSharedSemaphore *waitCond = nullptr);
+
+    ito::RetVal addMenuElement(int typeID, const QString &key, const QString &name, const QString &code, const QString &buttonIconFilename, QSharedPointer<size_t> menuHandle, bool showMessage = true, ItomSharedSemaphore *waitCond = NULL);
+    ito::RetVal removeMenuElement(const QString &key, QSharedPointer<QVector<size_t> > removedMenuHandles, bool showMessage = true, ItomSharedSemaphore *waitCond = NULL);
+    ito::RetVal removeMenuElement(const size_t menuHandle, QSharedPointer<QVector<size_t> > removedMenuHandles, bool showMessage = true, ItomSharedSemaphore *waitCond = NULL);
+
+	ito::RetVal dumpToolbarsAndButtons(QSharedPointer<QString> pythonCodeString, ItomSharedSemaphore *waitCond = NULL);
+
+    void pythonRunSelection(QString selectionText);
+
+    void setCursor(const Qt::CursorShape cursor);
+    void resetCursor();
+
+    void currentDirectoryChanged();
+
+    void showInfoMessageLine( QString text, QString winKey = "" );
+
+    void showAssistant(const QString& collectionFile = "", const QString& showUrl = "");
+
+	void setCentralWidgetsSizes(const QVector<int> &sizes);
+
+private slots:
+    void mnuAboutQitom();
+    void mnuCopyLog();
+    void mnuExitApplication();
+
+    void mnuNewScript();
+    void mnuOpenFile();
+    void mnuShowAssistant();
+    void mnuShowScriptReference();
+    void mnuShowDesigner();
+    void mnuShowProperties();
+    void mnuShowUserManagement();
+    void mnuToggleExecPyCodeByDebugger(bool checked);
+    void mnuCloseAllPlots();
+    void mnuShowAllPlots();
+    void mnuMinimizeAllPlots();
+
+    void mnuScriptStop();
+    void mnuScriptContinue();
+    void mnuScriptStep();
+    void mnuScriptStepOver();
+    void mnuScriptStepOut();
+    void mnuPyReloadModules();
+    void mnuShowLoadedPlugins();
+    void mnuPyPipManager();
+	void mnuPyTimerManager();
+
+    void mnuPyAutoReloadTriggered(bool checked);
+
+    void helpAssistantError ( QProcess::ProcessError error );
+    void designerError ( QProcess::ProcessError error );
+
+    void userDefinedActionTriggered(const QString &pythonCode);
+
+    void pythonAutoReloadChanged(bool enabled, bool checkFile, bool checkCmd, bool checkFct);
+
+    void menuLastFilesAboutToShow();
+    void lastFileOpen(const QString &path);
+    void openScript(const QString &filename);
+
+    void mnuViewAboutToShow();
+    void mnuFigureAboutToShow();
+    void raiseFigureByHandle(int handle);
+
+    void scriptStatusBarInformationChanged(
+        const QPointer<ScriptDockWidget> sourceDockWidget,
+        const QString& encoding,
+        int line,
+        int column);
+
+};
+
+} //end namespace ito

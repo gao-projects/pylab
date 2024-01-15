@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogLoadedPlugins</class>
+ <widget class="QDialog" name="DialogLoadedPlugins">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>629</width>
+    <height>484</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Load Status of Plugins</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Load status of detected plugin files</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QCheckBox" name="onlyCompatibleCheck">
+          <property name="text">
+           <string>Only display compatible plugins (debug / release)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="collapseButton">
+          <property name="text">
+           <string>Collapse all</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="expandButton">
+          <property name="text">
+           <string>Expand all</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QTreeWidget" name="tree">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="rootIsDecorated">
+         <bool>true</bool>
+        </property>
+        <property name="columnCount">
+         <number>6</number>
+        </property>
+        <attribute name="headerVisible">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="headerCascadingSectionResizes">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="headerMinimumSectionSize">
+         <number>21</number>
+        </attribute>
+        <attribute name="headerDefaultSectionSize">
+         <number>25</number>
+        </attribute>
+        <attribute name="headerShowSortIndicator" stdset="0">
+         <bool>true</bool>
+        </attribute>
+        <column>
+         <property name="text">
+          <string notr="true">1</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string notr="true">2</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string notr="true">3</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string notr="true">4</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string notr="true">5</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string notr="true">6</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lblText">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+     <zorder>tree</zorder>
+     <zorder>lblText</zorder>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Filters</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <property name="topMargin">
+       <number>4</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Plugin name</string>
+        </property>
+        <property name="buddy">
+         <cstring>filterEdit</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="filterEdit"/>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QCommandLinkButton" name="cmdMessage">
+          <property name="text">
+           <string>Messages</string>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="cmdWarning">
+          <property name="text">
+           <string>Warnings</string>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="cmdError">
+          <property name="text">
+           <string>Errors</string>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="cmdIgnored">
+          <property name="text">
+           <string>Ignored</string>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok</set>
+     </property>
+     <property name="centerButtons">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>onlyCompatibleCheck</tabstop>
+  <tabstop>collapseButton</tabstop>
+  <tabstop>expandButton</tabstop>
+  <tabstop>tree</tabstop>
+  <tabstop>filterEdit</tabstop>
+  <tabstop>cmdMessage</tabstop>
+  <tabstop>cmdWarning</tabstop>
+  <tabstop>cmdError</tabstop>
+  <tabstop>cmdIgnored</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>collapseButton</sender>
+   <signal>clicked()</signal>
+   <receiver>tree</receiver>
+   <slot>collapseAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>481</x>
+     <y>44</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>309</x>
+     <y>169</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>expandButton</sender>
+   <signal>clicked()</signal>
+   <receiver>tree</receiver>
+   <slot>expandAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>562</x>
+     <y>44</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>309</x>
+     <y>169</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>DialogLoadedPlugins</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>309</x>
+     <y>443</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>309</x>
+     <y>231</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

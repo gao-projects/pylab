@@ -1,0 +1,93 @@
+
+
+set(target_name CommonPlotLib)
+project(${target_name})
+
+message(STATUS "--------------- LIBRARY ${target_name} -----------------")
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# add 3rd party packages
+itom_find_package_qt(ON Core PrintSupport Designer Xml Svg Widgets UiTools LinguistTools)
+find_package(OpenCV COMPONENTS core REQUIRED)
+
+# set some preprocessor directives
+add_definitions(-DITOMLIBS_SHARED -D_ITOMLIBS_SHARED)
+add_definitions(-DITOMCOMMONPLOT_DLL -D_ITOMCOMMONPLOT_DLL)
+add_definitions(-DUNICODE -D_UNICODE)
+add_definitions(-DITOMCOMMONPLOT_MOC)
+
+if(BUILD_WITH_PCL)
+    include(Setup_PCL_Itom)
+    if(WIN32)
+        find_package(PCL 1.5.1 REQUIRED COMPONENTS common PATHS ${PCL_CMAKE_DIR} NO_DEFAULT_PATH)
+    else(WIN32)
+        find_package(PCL 1.5.1 REQUIRED COMPONENTS common)
+    endif(WIN32)
+    add_definitions(-DUSEPCL -D_USEPCL)
+endif(BUILD_WITH_PCL)
+
+if(BUILD_WITH_PCL)
+    set(POINTCLOUD_LIBRARIES pointcloud)
+else()
+    set(POINTCLOUD_LIBRARIES "")
+endif()
+
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shapes
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${PCL_INCLUDE_DIRS}
+)
+
+link_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}/../DataObject
+    ${CMAKE_CURRENT_BINARY_DIR}/../PointCloud
+
+)
+
+set(itomCommonPlot_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/plotVersion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/plotCommon.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AbstractDObjFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AbstractDObjPCLFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AbstractFigure.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AbstractItomDesignerPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AbstractNode.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/designerPluginInterfaceVersion.h
+)
+
+set(itomCommonPlot_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/sources/AbstractDObjFigure.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sources/AbstractDObjPCLFigure.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sources/AbstractFigure.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sources/AbstractNode.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sources/Channel.cpp
+)
+
+if(MSVC)
+    list(APPEND CommonQt_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/version.rc)
+endif()
+
+add_library(${target_name} SHARED ${itomCommonPlot_SOURCES} ${itomCommonPlot_HEADERS})
+
+target_link_libraries(${target_name} ${OpenCV_LIBS} ${POINTCLOUD_LIBRARIES} ${QT5_LIBRARIES} DataObject CommonLib ShapeLib qpropertyeditor CommonQtLib)
+
+# Qt: enable all automoc, autouic and autorcc. Autouic file will be disabled for all files that are processed manually by itom_qt_wrap_ui.
+set_target_properties(${target_name} PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
+
+#translation
+itom_library_translation(QM_FILES TARGET ${target_name} FILES_TO_TRANSLATE ${itomCommonPlot_SOURCES} ${itomCommonPlot_HEADERS})
+
+# COPY SECTION
+set(COPY_SOURCES "")
+set(COPY_DESTINATIONS "")
+
+#copy all qm files to the translations subfolder of the itom root directory
+foreach(_qm ${QM_FILES})
+    set(COPY_SOURCES ${COPY_SOURCES} ${_qm})
+    set(COPY_DESTINATIONS ${COPY_DESTINATIONS} "${ITOM_APP_DIR}/translation")
+endforeach()
+
+itom_add_library_to_appdir_and_sdk(${target_name} COPY_SOURCES COPY_DESTINATIONS)
+itom_post_build_copy_files(${target_name} COPY_SOURCES COPY_DESTINATIONS)

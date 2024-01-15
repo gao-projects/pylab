@@ -1,0 +1,82 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <link rel='stylesheet' type='text/css' href='help_style.css'>
+</head>
+<body>
+
+<!-- Breadcrumb menu-->
+%BREADCRUMB%
+
+<h1 id="FunctionName">%NAME%</h1>
+
+<div class="document">
+    <!-- Description -->
+    <p>%INFO%</p>
+
+    <!--%PARAMETERS_INSERT%-->
+    <!--%PARAMETERS_START%-->
+    <p class="rubric"><!--%PARAMETERS_CAPTION%--></p>
+    <table class="docutils field-list" frame="void" rules="none">
+        <col class="field-name" />
+        <col class="field-body" />
+        <tbody valign="top">
+            <!--%PARAMMAND_START%-->
+            <tr class="field">
+                <th class="field-name">%PARAMNAME% <div class="smaller">
+                <div class="meta"> %PARAMTYPE%</div></div></th>
+                <td class="field-body">%PARAMINFO% <div class="smaller">
+                <div class="meta">%PARAMMETA%</div></div></td>
+            </tr>
+            <!--%PARAMMAND_END%-->
+            <!--%PARAMMAND_INSERT%-->
+            <!--%PARAMOPT_START%-->
+            <tr class="field">
+                <th class="field-name">%PARAMNAME% <div class="smaller"> <div class="meta">%PARAMTYPE% <br>(<!--%PARAMOPT_CAPTION%-->)</div></div></th>
+                <td class="field-body">%PARAMINFO% <div class="smaller">
+                <div class="meta">%PARAMMETA%</div></div></td>
+            </tr>
+            <!--%PARAMOPT_END%-->
+            <!--%PARAMOPT_INSERT%-->
+    </tbody>
+    </table>
+    <!--%PARAMETERS_END%-->
+
+    <!--%RETURNS_INSERT%-->
+    <!--%RETURNS_START%-->
+    <p class="rubric"><!--%RETURNS_CAPTION%--></p>
+    <table class="docutils field-list" frame="void" rules="none">
+        <col class="field-name" />
+        <col class="field-body" />
+        <tbody valign="top">
+            <!--%OUT_START%-->
+            <tr class="field">
+                <th class="field-name">%PARAMNAME% <div class="smaller"> %PARAMTYPE%</div></th>
+                <td class="field-body">%PARAMINFO%</td>
+            </tr>
+            <!--%OUT_END%-->
+            <!--%OUT_INSERT%-->
+    </tbody>
+    </table>
+    <!--%RETURNS_END%-->
+
+    <!--%OBSERVER_INSERT%-->
+    <!--%OBSERVER_START%-->
+    <p class="rubric"><!--%OBSERVER_CAPTION%--></p></br>
+    </br>
+    <p><ul>%OBSERVERTEXT%</ul></p>
+    <!--%OBSERVER_END%-->
+
+    <!--%EXAMPLE_INSERT%-->
+    <!--%EXAMPLE_START%-->
+    <p class="rubric"><!--%EXAMPLE_CAPTION%--></p></br>
+    </br>
+    <p><!--%EXAMPLEPLAIN%--></p>
+    <p><a id="HiLink" href="example://filter.html#<!--%EXAMPLELINK%-->"><!--%EXAMPLELINK_CAPTION%--></a></p>
+    <!--%EXAMPLE_END%-->
+
+</div>
+</body>
+</html>
+</body></html>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WidgetPropEditorScripts</class>
+ <widget class="QWidget" name="WidgetPropEditorScripts">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>522</width>
+    <height>413</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_8">
+   <item>
+    <widget class="QGroupBox" name="groupClassNavigator">
+     <property name="title">
+      <string>Code Outline</string>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <widget class="QCheckBox" name="checkOutlineShowNavigation">
+        <property name="text">
+         <string>Show class and method navigation combo boxes above each script.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QCheckBox" name="checkOutlineAutoUpdateEnabled">
+          <property name="text">
+           <string>Auto update the outline after the last key press with a delay of...</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spinOutlineAutoUpdateDelay">
+          <property name="suffix">
+           <string> s</string>
+          </property>
+          <property name="decimals">
+           <number>1</number>
+          </property>
+          <property name="singleStep">
+           <double>0.100000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.500000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Edge Mode</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QComboBox" name="comboEdgeMode">
+        <item>
+         <property name="text">
+          <string>Long lines are not marked in the script editor (no edge mode)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>A vertical line is drawn at a given column position (recommended for monospace fonts)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Set the background color of characters after the column limit to a specific color</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="lblEdgeColumn">
+          <property name="text">
+           <string>Edge column:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinEdgeColumn">
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+          <property name="value">
+           <number>80</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblEdgeBg">
+          <property name="text">
+           <string>Background color:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ColorPickerButton" name="colorEdgeBg">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="dialogOptions">
+           <set>ColorPickerButton::ShowAlphaChannel</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Filename Shortening Mode in Tabs (e.g. if many scripts are opened)</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QRadioButton" name="radioElideLeft">
+        <property name="text">
+         <string>Elide Left (longScriptName.py will become ...ptName.py)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radioElideRight">
+        <property name="text">
+         <string>Elide Right (longScriptName.py will become longScript...)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radioElideMiddle">
+        <property name="text">
+         <string>Elide Middle (longScriptName.py will become long...me.py)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radioElideNone">
+        <property name="text">
+         <string>No Elide (the original names are shown, but arrows appear if too many tabs are opened)</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorPickerButton</class>
+   <extends>QPushButton</extends>
+   <header>colorPickerButton.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>checkOutlineAutoUpdateEnabled</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinOutlineAutoUpdateDelay</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>323</x>
+     <y>86</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>89</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
