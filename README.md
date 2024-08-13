@@ -1,12 +1,5 @@
 # pylab
 
-[![Generic badge](https://img.shields.io/badge/powered%20by-ITO-blue)](https://www.ito.uni-stuttgart.de/)
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
-
-[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
-[![made-with-opencv](https://img.shields.io/badge/Made%20by-OpenCV-green)](https://opencv.org/)
-[![made-with-qt](https://img.shields.io/badge/Made%20by-Qt-brightgreen)](https://www.qt.io/product/framework)
-
 pylab future want to a cross-platform, integrated development environment (IDE) for
 application developers to create applications for multiple desktop, embedded,
 and mobile device platforms. and now is build on windows.

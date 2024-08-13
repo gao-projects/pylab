@@ -212,6 +212,7 @@ This plugin can also be used as template for other grabber.");
     ito::StringMeta sm(ito::StringMeta::String, "noise");
     sm.addItem("gaussianSpot");
     sm.addItem("gaussianSpotArray");
+    sm.addItem("pattern");
     param.setMeta(&sm, false);
     m_initParamsOpt.append(param);
 }
@@ -459,6 +460,10 @@ ito::RetVal DummyGrabber::init(QVector<ito::ParamBase> * /*paramsMand*/, QVector
     else if (type == "gaussianSpotArray")
     {
         m_imageType = imgTypeGaussianSpotArray;
+    }
+    else if (type == "pattern")
+    {
+        m_imageType = imgTypePattern;
     }
 
     setIdentifier(QString::number(getID()));
@@ -1066,6 +1071,13 @@ ito::RetVal DummyGrabber::acquire(const int /*trigger*/, ItomSharedSemaphore *wa
 
 
 
+        }
+        else if (m_imageType == imgTypePattern) //create dummy Gaussian image
+        {
+        QString filename = qApp->applicationDirPath() + "/pattern.png";
+
+        cv::Mat m = cv::imread(filename.toStdString(), -1);
+        m_data = ito::DataObject(m);
         }
 
         if (integration_time > 0.0)

@@ -46,7 +46,8 @@ enum UserFeature
     featPlugins             =   0x08,
     featConsoleRead         =   0x10,
     featConsoleReadWrite    =   0x20,
-    featProperties          =   0x40
+    featProperties          =   0x40,
+    featApp                 =   0x80
 };
 
 Q_DECLARE_FLAGS(UserFeatures, UserFeature)

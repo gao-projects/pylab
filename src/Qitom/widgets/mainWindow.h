@@ -101,6 +101,8 @@ private:
     QMenu *m_pMenuReloadModule;
     QMenu *m_pMenuView;
 
+    QMenu* m_pMenuCamera;
+
     HelpSystem *m_pHelpSystem;
 
     //!< label for showing current directory in status bar

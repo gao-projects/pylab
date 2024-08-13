@@ -26,7 +26,7 @@ include(ItomBuildMacros)
 add_subdirectory(actuator)
 add_subdirectory(algorithm)
 add_subdirectory(grabber)
-
+add_subdirectory(OpenCVGrabber)
 add_subdirectory(AVTVimba)
 add_subdirectory(DummyGrabber)
 add_subdirectory(DummyMotor)

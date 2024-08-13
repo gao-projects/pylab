@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>499</width>
+    <width>534</width>
     <height>615</height>
    </rect>
   </property>
@@ -161,6 +161,13 @@
          <widget class="QCheckBox" name="checkBox_userManag">
           <property name="text">
            <string>User Management</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_app">
+          <property name="text">
+           <string>App</string>
           </property>
          </widget>
         </item>

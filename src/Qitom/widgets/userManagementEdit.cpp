@@ -108,6 +108,12 @@ bool DialogUserManagementEdit::saveUser()
         }
 
         UserFeatures flags;
+        
+        if (ui.checkBox_app->isChecked())
+        {
+            flags |= featApp;
+        }
+        
         if (ui.checkBox_fileSystem->isChecked())
         {
             flags |= featFileSystem;
@@ -325,6 +331,7 @@ void DialogUserManagementEdit::enableWidgetsByUserRole(
 	}
 
     // set the check state of all features
+    ui.checkBox_app->setChecked(features & featApp);
     ui.checkBox_devTools->setChecked(features & featDeveloper);
     ui.checkBox_fileSystem->setChecked(features & featFileSystem);
     ui.checkBox_userManag->setChecked(features & featUserManagement);
@@ -396,6 +403,7 @@ void DialogUserManagementEdit::enableWidgetsByUserRole(
 
     if (rightCmp != 0)
     {
+        ui.checkBox_app->setEnabled(rightCmp > 0);
         ui.checkBox_devTools->setEnabled(rightCmp > 0);
         ui.checkBox_fileSystem->setEnabled(rightCmp > 0);
         ui.checkBox_userManag->setEnabled(rightCmp > 0);
@@ -407,6 +415,7 @@ void DialogUserManagementEdit::enableWidgetsByUserRole(
     }
     else
     {
+        ui.checkBox_app->setEnabled(currentFeatures& featApp);
         ui.checkBox_devTools->setEnabled(currentFeatures & featDeveloper);
         ui.checkBox_fileSystem->setEnabled(currentFeatures & featFileSystem);
         ui.checkBox_userManag->setEnabled(currentFeatures & featUserManagement);

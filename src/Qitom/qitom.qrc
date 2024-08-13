@@ -83,6 +83,16 @@
         <file>icons/timerStop.png</file>
         <file>icons/timerRun.png</file>
         <file>icons/unpack.png</file>
+        <file>icons/itomicon/cvCam.png</file>
+        <file>icons/histogram.png</file>
+        <file>icons/leftrotate.png</file>
+        <file>icons/play.png</file>
+        <file>icons/rightrotate.png</file>
+        <file>icons/save.png</file>
+        <file>icons/stop.png</file>
+        <file>icons/tile.png</file>
+        <file>icons/zoom_in.png</file>
+        <file>icons/zoom_out.png</file>
     </qresource>
     <qresource prefix="/arrows">
         <file>icons/2downarrow.png</file>

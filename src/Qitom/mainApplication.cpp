@@ -135,7 +135,7 @@ MainApplication::MainApplication(tGuiType guiType) :
 
     //global settings: the settings file will be stored in itomSettings/{organization}/{applicationName}.ini
     QCoreApplication::setOrganizationName("ito");
-    QCoreApplication::setApplicationName("itom");
+    QCoreApplication::setApplicationName("cvCam");
     QCoreApplication::setApplicationVersion(ITOM_VERSION_STR);
 }
 
@@ -253,7 +253,7 @@ QPixmap MainApplication::getSplashScreenPixmap() const
 #ifdef USEGIMMICKS
     QString splashScreenFileName = getSplashScreenFileName(); // get the fileName of splashScreen. Different at easter and christmas time
 #else
-    QString splashScreenFileName = ":/application/icons/itomicon/splashScreen4.png"; //only default splashScreen
+    QString splashScreenFileName = ":/application/icons/itomicon/cvCam.png"; //only default splashScreen
 #endif // USEUSEGIMMICKS
 
     QPixmap pixmap(splashScreenFileName);

@@ -84,7 +84,7 @@ MainWindow::MainWindow() :
     m_helpDock(NULL), m_globalWorkspaceDock(NULL), m_localWorkspaceDock(NULL),
     m_callStackDock(NULL), m_fileSystemDock(NULL), m_pAIManagerWidget(NULL), m_appFileNew(NULL),
     m_appFileOpen(NULL), m_aboutQt(NULL), m_aboutQitom(NULL), m_copyLog(nullptr), m_pMenuFigure(NULL),
-    m_pMenuHelp(NULL), m_pMenuFile(NULL), m_pMenuPython(NULL), m_pMenuReloadModule(NULL),
+    m_pMenuHelp(NULL), m_pMenuCamera(NULL), m_pMenuFile(NULL), m_pMenuPython(NULL), m_pMenuReloadModule(NULL),
     m_pMenuView(NULL), m_pHelpSystem(NULL), m_pStatusLblCurrentDir(NULL),
     m_pStatusLblScriptInfo(nullptr),
     m_pStatusLblPythonBusy(NULL), m_pythonBusy(false), m_pythonDebugMode(false),
@@ -94,9 +94,9 @@ MainWindow::MainWindow() :
     // qDebug() << "mainWindow. Thread: " << QThread::currentThreadId ();
 #ifdef __APPLE__
     // Setting high res icon for OS X
-    QApplication::setWindowIcon(QIcon(":/application/icons/itomicon/itomIcon1024"));
+    QApplication::setWindowIcon(QIcon(":/application/icons/itomicon/cvCam.png"));
 #else
-    QApplication::setWindowIcon(QIcon(":/application/icons/itomicon/itomLogo3_64.png"));
+    QApplication::setWindowIcon(QIcon(":/application/icons/itomicon/cvCam.png"));
 #endif
 
     qDebug("build main window");
@@ -107,11 +107,11 @@ MainWindow::MainWindow() :
     // general windows settings
     if (sizeof(void*) > 4) // was before a check using QT_POINTER_SIZE
     {
-        setWindowTitle(tr("itom (x64)"));
+        setWindowTitle(tr("cvCamTools (x64)"));
     }
     else
     {
-        setWindowTitle(tr("itom"));
+        setWindowTitle(tr("cvCamTools"));
     }
 
     setUnifiedTitleAndToolBarOnMac(true);
@@ -135,6 +135,7 @@ MainWindow::MainWindow() :
     {
         qDebug(".. before loading console widget");
         // console (central widget):
+
         m_console = new ConsoleWidget(this);
 
         if (uOrg->currentUserHasFeature(featConsoleReadWrite) == false)
@@ -921,7 +922,7 @@ void MainWindow::createActions()
     // m_aboutQt->setShortcut(QKeySequence("F3"));
 
     m_aboutQitom = new QAction(
-        QIcon(":/application/icons/itomicon/itomLogo3_64.png"), tr("About itom..."), this);
+        QIcon(":/application/icons/itomicon/cvCam.png"), tr("About itom..."), this);
     connect(m_aboutQitom, SIGNAL(triggered()), this, SLOT(mnuAboutQitom()));
 
     if (AppManagement::getLogger())
@@ -1036,6 +1037,17 @@ void MainWindow::createActions()
         a = m_actions["python_timerManager"] = new QAction(tr("Timer Manager..."), this);
         connect(a, SIGNAL(triggered()), this, SLOT(mnuPyTimerManager()));
     }
+
+    if (uOrg->currentUserHasFeature(featApp))
+    {
+        a = m_actions["camera_open"] = new QAction(
+            QIcon(":/application/icons/play.png"), tr("Open Camera"), this);
+        connect(a, SIGNAL(triggered()), this, SLOT(mnuShowScriptReference()));
+
+        a = m_actions["camera_measure"] = new QAction(
+            QIcon(":/application/icons/histogram.png"), tr("Measure"), this);
+        connect(a, SIGNAL(triggered()), this, SLOT(mnuShowScriptReference()));
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------
@@ -1085,6 +1097,15 @@ void MainWindow::createToolBars()
         pythonToolBar->setObjectName("toolbarPython");
         pythonToolBar->addAction(m_actions["python_global_runmode"]);
         pythonToolBar->setFloatable(false);
+    }
+
+    if (m_actions.contains("camera_open") && m_actions["camera_open"])
+    {
+        QToolBar* cameraToolBar = addToolBar(tr("Camera"));
+        cameraToolBar->setObjectName("toolbarCamera");
+        cameraToolBar->addAction(m_actions["camera_open"]);
+        cameraToolBar->addAction(m_actions["camera_measure"]);
+        cameraToolBar->setFloatable(false);
     }
 }
 
@@ -1175,6 +1196,15 @@ void MainWindow::createMenus()
 
         m_pMenuPython->addAction(m_actions["python_timerManager"]);
         m_pMenuPython->addAction(m_actions["py_packageManager"]);
+    }
+
+    
+
+    if (uOrg->currentUserHasFeature(featApp))
+    {
+        m_pMenuCamera = menuBar()->addMenu(tr("Camera"));
+        m_pMenuCamera->addAction(m_actions["camera_open"]);
+        m_pMenuCamera->addAction(m_actions["camera_measure"]);
     }
 
     m_pMenuHelp = menuBar()->addMenu(tr("Help"));

@@ -448,6 +448,7 @@ int main(int argc, char *argv[])
         //check if args contains entries with .py at the end, these files should be opened as scripts at startup
         QStringList scriptsToOpen;
         QStringList scriptsToExecute;
+        //args.append("run=D:\\VSProj\\pylab\\src\\demo\\itom\\basics\\demo_measurement.py");
         foreach(const QString &a, args)
         {
             if (a.endsWith(".py", Qt::CaseInsensitive))
